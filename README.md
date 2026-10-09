@@ -46,7 +46,7 @@ gcc -std=c23 -Wall -Werror jeu.c lib/*.c -o jeu -lm
 bibliothèque externe, arguments de lancement, mode de jeu...]
 
 ## Schéma de décomposition
-
+```bash
 main
 ├── void ModifierBateau(int tab[TAILLE][TAILLE], int bateau[QUANTITE])
 │   ├── void afficherTable(int tab[TAILLE][TAILLE])
@@ -83,7 +83,7 @@ main
     ├── void tire(int tab[TAILLE][TAILLE], int tirs[TAILLE][TAILLE],
     │             int bateau[QUANTITE], int ligne, int colonne)
     └── bool estPertu(int bateau[QUANTITE])
-
+```
 
 
 
@@ -91,11 +91,10 @@ main
 ## Organisation du projet
 
 
-|-----------------------------------|
 | Fichier | Rôle                    |
 | ------- | ----------------------- |
 | `jeu.c` | [point d'entrée du jeu] |
-|-----------------------------------|
+
 
 ## Documentation
 
