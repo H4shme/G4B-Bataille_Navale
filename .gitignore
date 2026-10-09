@@ -1,0 +1,10 @@
+# ne suit pas les exécutables
+jeu
+
+# documentation
+html/
+
+# backups
+*.bak/
+
+gabaritchangelog.md
