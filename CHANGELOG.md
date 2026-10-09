@@ -23,7 +23,7 @@ réalisé à plusieurs cite tous ses auteurs : `(@prénom1, @prénom2)`.
 - Systeme de combat JcJ (PVP) avec gestion des tours et des tirs (@Han Tao)
 - Suivi des tirs déjà effectués et detection de la victoire (@Aurelien)
 - Fonctions préparatoires pour les tirs de l'ordinateur et la détection des bateaux coulés (@Momcilo)
-- Ajout des commentaires doxygen (@Youssef, @Iesin, @Han Tao, @Aurelien, @Momcilo)
+- Ajout des commentaires format doxygen (@Youssef, @Iesin, @Han Tao, @Aurelien, @Momcilo)
 
 ### Modifié
 
