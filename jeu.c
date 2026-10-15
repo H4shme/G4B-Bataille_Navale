@@ -1,4 +1,3 @@
-
 #include <stdbool.h>
 #include <stdio.h>
 #define TAILLE 10
@@ -17,6 +16,25 @@
  * Le plateau est représenté par une grille carrée de taille TAILLE.
  * Les bateaux sont placés avant que les joueurs tirent à tour de rôle.
  */
+typedef struct {
+  char nom[16];
+  int grille[TAILLE][TAILLE];
+  int tirs[TAILLE][TAILLE];
+  int bateauxAPlacer[QUANTITE];
+  int pointsVie[QUANTITE];
+} Joueur;
+
+typedef struct {
+  int ligne;
+  int colonne;
+  int resultat;
+} Coup;
+
+typedef struct {
+  Joueur joueurs[2];
+  int joueurActif;
+  bool terminee;
+} Partie;
 
 void afficherCase(int tab[TAILLE][TAILLE], int ligne, int colonne,
                   bool auCombat);
@@ -25,6 +43,7 @@ void afficherTable(int tab[TAILLE][TAILLE]);
 
 void afficherDeuxTable(int tab1[TAILLE][TAILLE], int tab2[TAILLE][TAILLE]);
 
+// modifie 14/10
 void afficherListeBateau(int bateau[QUANTITE]);
 
 bool estVide(int tab[TAILLE][TAILLE], int ligne, int colonne);
@@ -82,8 +101,43 @@ bool flotteDetruite(int tab[TAILLE][TAILLE]);
 
 void tirOrdinateur(int tab[TAILLE][TAILLE]);
 
+void cls() {
+  for (int i = 0; i < 50; i++) {
+    puts("");
+  }
+}
+
 int main() {
+  // test nomDeJoueur
+  Joueur player1 = {.nom = "Joueur 1"};
   int tab1[TAILLE][TAILLE] = {0};
+  int bateau1[QUANTITE] = {1, 2, 3, 4, 5};
+
+  Joueur player2 = {.nom = "Joueur 2"};
+
+  int tab2[TAILLE][TAILLE] = {0};
+  int bateau2[QUANTITE] = {1, 2, 3, 4, 5};
+
+  ModifierBateau(tab1, bateau1);
+
+  char c;
+  cls();
+  puts("Au tour du joueur numéro 2 ! ");
+  printf("Appuyez sur Entrée pour continuer");
+  scanf(" %c", &c);
+
+  ModifierBateau(tab2, bateau2);
+
+  cls();
+
+  printf("Plateau du joueur 1 :\n");
+  afficherTable(tab1);
+
+  printf("Plateau du joueur 2 :\n");
+  afficherTable(tab2);
+
+  /*
+  // PVP
   int tab2[TAILLE][TAILLE] = {0};
   int bateau1[QUANTITE] = {1, 2, 3, 4, 5};
   int bateau2[QUANTITE] = {1, 2, 3, 4, 5};
@@ -99,6 +153,7 @@ int main() {
   int tirs2[TAILLE][TAILLE] = {0};
 
   seBattre(tab1, tab2, bateau1, bateau2, tirs1, tirs2);
+  */
   return 0;
 }
 
@@ -159,7 +214,10 @@ void afficherCase(int tab[TAILLE][TAILLE], int ligne, int colonne,
  */
 void afficherTable(int tab[TAILLE][TAILLE]) {
   puts("");
-  puts("  0 1 2 3 4 5 6 7 8 9");
+  for (int colonne = 0; colonne < TAILLE; colonne++) {
+    printf("%2d", colonne);
+  }
+  puts("");
   for (int ligne = 0; ligne < TAILLE; ligne++) {
     printf("%c ", ligne + 'A');
     for (int colonne = 0; colonne < TAILLE; colonne++) {
@@ -192,17 +250,21 @@ void afficherDeuxTable(int tab1[TAILLE][TAILLE], int tab2[TAILLE][TAILLE]) {
   }
 }
 
+// modifie 14/10
+
 /**
  * @brief Affiche les bateaux qui peuvent encore être placés.
  * @param bateau tableau indiquant les bateaux restant à placer
  */
 void afficherListeBateau(int bateau[QUANTITE]) {
   puts("");
-  if (bateau[0]) puts("Patrouilleur : Entrez 1 (2 cases)");
-  if (bateau[1]) puts("Croiseur     : Entrez 2 (3 cases)");
-  if (bateau[2]) puts("Destroyer    : Entrez 3 (3 cases)");
-  if (bateau[3]) puts("Cuirassé     : Entrez 4 (4 cases)");
-  if (bateau[4]) puts("Porte-avions : Entrez 5 (5 cases)");
+
+  if (bateau[0]) puts("Patrouilleur (p) : Entrez 1 (2 cases)");
+  if (bateau[1]) puts("Croiseur     (c) : Entrez 2 (3 cases)");
+  if (bateau[2]) puts("Destroyer    (D) : Entrez 3 (3 cases)");
+  if (bateau[3]) puts("Cuirassé     (C) : Entrez 4 (4 cases)");
+  if (bateau[4]) puts("Porte-avions (P) : Entrez 5 (5 cases)");
+
   puts("");
 }
 
@@ -471,6 +533,7 @@ void AjouterBateau(int tab[TAILLE][TAILLE], int bateau[QUANTITE]) {
       impossiblePlace = true;
       continue;
     }
+
     afficherListeBateau(bateau);
     if (!LireType(ptrT)) {
       puts("Type invalide.");
@@ -496,10 +559,11 @@ void AjouterBateau(int tab[TAILLE][TAILLE], int bateau[QUANTITE]) {
         continue;
       }
       PlacerBateau(tab, bateau, position[0], position[1], type, direction);
-      afficherTable(tab);
     }
   } while (impossiblePlace);
 }
+
+// modifié 14/10
 
 /**
  * @brief Permet d'ajouter ou de supprimer des bateaux avant de commencer.
@@ -509,16 +573,24 @@ void AjouterBateau(int tab[TAILLE][TAILLE], int bateau[QUANTITE]) {
 void ModifierBateau(int tab[TAILLE][TAILLE], int bateau[QUANTITE]) {
   int mode;
   bool termine = false;
-  afficherTable(tab);
+
   while (!termine) {
+    cls();
+    afficherTable(tab);
     printf("Ajouter (1), supprimer (2), terminer (3) (temporaire): ");
     scanf("%d", &mode);
     switch (mode) {
       case 1:
+        cls();
+        if (TerminerPlacement(bateau)) {
+          printf("Tous les bateaux sont déjà placé !\n");
+          break;
+        }
         AjouterBateau(tab, bateau);
         break;
-      case 2:
+      case 2: {
         int type;
+        afficherListeBateau(bateau);
         if (!LireType(&type)) {
           puts("Numéro invalide.");
           break;
@@ -529,12 +601,11 @@ void ModifierBateau(int tab[TAILLE][TAILLE], int bateau[QUANTITE]) {
         }
         SupprimerBateau(tab, bateau, type);
         break;
+      }
       case 3:
         if (TerminerPlacement(bateau)) {
           termine = true;
-          for (int i = 0; i < 300; i++) {
-            puts("");
-          }
+          break;
         } else
           puts("Tous les bateaux ne sont pas encore placés.");
         break;
