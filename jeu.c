@@ -129,12 +129,13 @@ int main() {
   ModifierBateau(tab2, bateau2);
 
   cls();
-
+  /*
   printf("Plateau du joueur 1 :\n");
   afficherTable(tab1);
 
   printf("Plateau du joueur 2 :\n");
   afficherTable(tab2);
+ */
 
   /*
   // PVP
@@ -146,14 +147,14 @@ int main() {
   ModifierBateau(tab1, bateau1);
   printf("Joueur 2, placez vos bateaux :\n");
   ModifierBateau(tab2, bateau2);
-
+ */
   rechargerVie(bateau1);
   rechargerVie(bateau2);
   int tirs1[TAILLE][TAILLE] = {0};
   int tirs2[TAILLE][TAILLE] = {0};
 
   seBattre(tab1, tab2, bateau1, bateau2, tirs1, tirs2);
-  */
+
   return 0;
 }
 
