@@ -7,4 +7,6 @@ html/
 # backups
 *.bak/
 
+# Useless Files dans github
 gabaritchangelog.md
+bateau.c

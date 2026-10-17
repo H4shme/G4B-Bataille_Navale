@@ -1,169 +1,102 @@
-#include <stdbool.h>
-#include <stdio.h>
-#define TAILLE 10
-#define QUANTITE 5
-
-#define RATE 6
-#define TOUCHE 10
-#define COULE 20
-#include <stdlib.h>
-#include <time.h>
-
 /**
  * @file jeu.c
- * @brief Implémentation d'un jeu de bataille navale à deux joueurs.
+ * @brief Jeu de bataille navale 0 deux joueurs sur le meme ecran
  *
- * Le plateau est représenté par une grille carrée de taille TAILLE.
- * Les bateaux sont placés avant que les joueurs tirent à tour de rôle.
+ * Chaque joueur place ses bateaux puis les deux joueurs tirent a tour de role
+ * Pendant le combat les bateaux restent caches.
+ */
+
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
+
+/** @brief Taille de la grille carrée */
+#define TAILLE 10
+
+/** @brief Valeur écrite dans la grille pour un tir raté en dehors de l intervalle -1 a -5. */
+#define RATE (-10)
+
+/** @brief Placement automatique de test (true) ou manuel (false) */
+#define AUTO_PLACEMENT false // Permet d'automatiquement placer des bateaux | Laissez false en prod
+
+/** @brief Types de bateaux NB_TYPE donne le nombre de types (n-1) */
+typedef enum { PATROUILLEUR, CROISEUR, DESTROYER, CUIRASSE, PORTEAVIONS, NB_TYPE } TypeBateau;
+
+/**
+ * @struct Bateau
+ * @brief Un bateau avec son type sa longueur sa position et son etat
  */
 typedef struct {
-  char nom[16];
-  int grille[TAILLE][TAILLE];
-  int tirs[TAILLE][TAILLE];
-  int bateauxAPlacer[QUANTITE];
-  int pointsVie[QUANTITE];
-} Joueur;
+  int type;
+  int longueur;
+  int ligne, colonne, direction;
+  bool estPlacee;
+  bool estElimine;
+} Bateau;
 
+/**
+ * @struct Coup
+ * @brief Un tir effectué avec sa position et son resultat
+ */
 typedef struct {
   int ligne;
   int colonne;
-  int resultat;
+  bool touche;
 } Coup;
 
+/**
+ * @struct Joueur
+ * @brief Un joueur avec sa grille ses bateaux et l historique de ses tirs
+ *
+ * La grille contient les bateaux du joueur et les tirs recus (valeurs negatives)
+ * Les coups sont les tirs que le joueur a faits sur son adversaire
+ */
 typedef struct {
-  Joueur joueurs[2];
-  int joueurActif;
-  bool terminee;
-} Partie;
+    char nom[16]; // Nom du Joueur
+    int grille[TAILLE][TAILLE]; // Grille du Joueur
+    Bateau bateaux[NB_TYPE]; // Bateaux restants du joueur
+    Coup coups[TAILLE * TAILLE]; // Les coups qu'il a joué
+    int nbCoups;
+} Joueur;
 
-void afficherCase(int tab[TAILLE][TAILLE], int ligne, int colonne,
-                  bool auCombat);
-
-void afficherTable(int tab[TAILLE][TAILLE]);
-
-void afficherDeuxTable(int tab1[TAILLE][TAILLE], int tab2[TAILLE][TAILLE]);
-
-// modifie 14/10
-void afficherListeBateau(int bateau[QUANTITE]);
-
-bool estVide(int tab[TAILLE][TAILLE], int ligne, int colonne);
-
-bool lireChoix();
-
-bool LireType(int* ptrT);
-
-bool LirePosition(int* ptrP);
-
-bool lireDirection(int* ptrD);
-
-bool PlacerListe(int tab[TAILLE][TAILLE], int ligne, int colonne, int type);
-
-bool TerminerPlacement(int bateau[QUANTITE]);
-
-bool PlacementPossible(int tab[TAILLE][TAILLE], int ligne, int colonne,
-                       int type, int direction);
-
-bool DejaTire(int tirs[TAILLE][TAILLE], int ligne, int colonne);
-
-bool estPertu(int bateau[QUANTITE]);
-
-void AjouterCase(int tab[TAILLE][TAILLE], int ligne, int colonne, int type);
-
-void AjouterBateau(int tab[TAILLE][TAILLE], int bateau[QUANTITE]);
-
-void SupprimerCase(int tab[TAILLE][TAILLE], int ligne, int colonne);
-
-void SupprimerBateau(int tab[TAILLE][TAILLE], int bateau[QUANTITE], int type);
-
-void PlacerBateau(int tab[TAILLE][TAILLE], int bateau[QUANTITE], int ligne,
-                  int colonne, int type, int direction);
-
-void ModifierBateau(int tab[TAILLE][TAILLE], int bateau[QUANTITE]);
-
-void rechargerVie(int* ptrB);
-
-void tire(int tab[TAILLE][TAILLE], int tirs[TAILLE][TAILLE],
-          int bateau[QUANTITE], int ligne, int colonne);
-
-void seBattre(int tab1[TAILLE][TAILLE], int tab2[TAILLE][TAILLE],
-              int bateau1[QUANTITE], int bateau2[QUANTITE],
-              int tirs1[TAILLE][TAILLE], int tirs2[TAILLE][TAILLE]);
-
-const char* nomBateau(int type);
-
-bool dejaTire(int tab[TAILLE][TAILLE], int ligne, int colonne);
-
-int compteType(int tab[TAILLE][TAILLE], int type);
-
-void coulerBateau(int tab[TAILLE][TAILLE], int type);
-
-bool flotteDetruite(int tab[TAILLE][TAILLE]);
-
-void tirOrdinateur(int tab[TAILLE][TAILLE]);
-
-void cls() {
-  for (int i = 0; i < 50; i++) {
-    puts("");
-  }
-}
-
-int main() {
-  // test nomDeJoueur
-  Joueur player1 = {.nom = "Joueur 1"};
-  int tab1[TAILLE][TAILLE] = {0};
-  int bateau1[QUANTITE] = {1, 2, 3, 4, 5};
-
-  Joueur player2 = {.nom = "Joueur 2"};
-
-  int tab2[TAILLE][TAILLE] = {0};
-  int bateau2[QUANTITE] = {1, 2, 3, 4, 5};
-
-  ModifierBateau(tab1, bateau1);
-
-  char c;
-  cls();
-  puts("Au tour du joueur numéro 2 ! ");
-  printf("Appuyez sur Entrée pour continuer");
-  scanf(" %c", &c);
-
-  ModifierBateau(tab2, bateau2);
-
-  cls();
-  /*
-  printf("Plateau du joueur 1 :\n");
-  afficherTable(tab1);
-
-  printf("Plateau du joueur 2 :\n");
-  afficherTable(tab2);
+/**
+ * @brief Indique si une case est vide
+ * @param tab grille de jeu
+ * @param ligne indice de ligne
+ * @param colonne indice de colonne
+ * @return true si la case vaut 0
  */
-
-  /*
-  // PVP
-  int tab2[TAILLE][TAILLE] = {0};
-  int bateau1[QUANTITE] = {1, 2, 3, 4, 5};
-  int bateau2[QUANTITE] = {1, 2, 3, 4, 5};
-
-  printf("Joueur 1, placez vos bateaux :\n");
-  ModifierBateau(tab1, bateau1);
-  printf("Joueur 2, placez vos bateaux :\n");
-  ModifierBateau(tab2, bateau2);
- */
-  rechargerVie(bateau1);
-  rechargerVie(bateau2);
-  int tirs1[TAILLE][TAILLE] = {0};
-  int tirs2[TAILLE][TAILLE] = {0};
-
-  seBattre(tab1, tab2, bateau1, bateau2, tirs1, tirs2);
-
-  return 0;
+bool estVide(int tab[TAILLE][TAILLE], int ligne, int colonne) {
+  return tab[ligne][colonne] == 0;
 }
 
 /**
- * @brief Affiche le symbole correspondant à une case du plateau.
- * @param tab plateau de jeu
- * @param ligne indice de ligne de la case
- * @param colonne indice de colonne de la case
- * @param auCombat indique si l'affichage se fait pendant le combat
+ * @brief Ecrit le type d un bateau dans une case si elle est vide
+ * @param tab grille de jeu
+ * @param ligne indice de ligne
+ * @param colonne indice de colonne
+ * @param type type du bateau
+ */
+void AjouterCase(int tab[TAILLE][TAILLE], int ligne, int colonne, int type) {
+  if (estVide(tab, ligne, colonne)) tab[ligne][colonne] = type;
+}
+
+/**
+ * @brief Vide une case de la grille
+ * @param tab grille de jeu
+ * @param ligne indice de ligne
+ * @param colonne indice de colonne
+ */
+void SupprimerCase(int tab[TAILLE][TAILLE], int ligne, int colonne) {
+  tab[ligne][colonne] = 0;
+}
+
+/**
+ * @brief Affiche le symbole d une case
+ * @param tab grille de jeu
+ * @param ligne indice de ligne
+ * @param colonne indice de colonne
+ * @param auCombat true pour cacher les bateaux et montrer les tirs
  */
 void afficherCase(int tab[TAILLE][TAILLE], int ligne, int colonne,
                   bool auCombat) {
@@ -172,14 +105,15 @@ void afficherCase(int tab[TAILLE][TAILLE], int ligne, int colonne,
       case 0:
         printf("~ ");
         break;
-      case 1:
-        printf("X ");
-        break;
-      case 2:
+      case RATE:
         printf("O ");
         break;
       default:
-        printf("  ");
+        if (tab[ligne][colonne] < 0) {
+          printf("X ");
+        } else {
+          printf("~ ");
+        }
         break;
     }
   } else {
@@ -210,19 +144,22 @@ void afficherCase(int tab[TAILLE][TAILLE], int ligne, int colonne,
 }
 
 /**
- * @brief Affiche le plateau de jeu avec les coordonnées.
- * @param tab plateau à afficher
+ * @brief Affiche une grille avec ses coordonnees
+ * @param tab grille a afficher
+ * @param auCombat true pour l affichage de combat
  */
-void afficherTable(int tab[TAILLE][TAILLE]) {
+void afficherTable(int tab[TAILLE][TAILLE], bool auCombat) {
   puts("");
+      printf(" ");
   for (int colonne = 0; colonne < TAILLE; colonne++) {
+
     printf("%2d", colonne);
   }
   puts("");
   for (int ligne = 0; ligne < TAILLE; ligne++) {
     printf("%c ", ligne + 'A');
     for (int colonne = 0; colonne < TAILLE; colonne++) {
-      afficherCase(tab, ligne, colonne, false);
+      afficherCase(tab, ligne, colonne, auCombat);
     }
     puts("");
   }
@@ -230,109 +167,107 @@ void afficherTable(int tab[TAILLE][TAILLE]) {
 }
 
 /**
- * @brief Affiche côte à côte deux tableaux de tirs.
- * @param tab1 tableau de tirs du premier joueur
- * @param tab2 tableau de tirs du second joueur
+ * @brief Affiche cote a cote les grilles des deux joueurs
+ *
+ * Le joueur 1 est toujours a gauche et le joueur 2 toujours a droite
+ * @param j1 premier joueur
+ * @param j2 second joueur
  */
-void afficherDeuxTable(int tab1[TAILLE][TAILLE], int tab2[TAILLE][TAILLE]) {
+void afficherDeuxTables(Joueur* j1, Joueur* j2) {
   puts("");
-  puts("  0 1 2 3 4 5 6 7 8 9        0 1 2 3 4 5 6 7 8 9");
+  printf("       %-15s            %-20s\n", j1->nom, j2->nom);
+
+  // En-tête : les deux blocs de colonnes
+  printf(" ");
+  for (int colonne = 0; colonne < TAILLE; colonne++) printf("%2d", colonne);
+  printf("      ");
+  printf(" ");
+  for (int colonne = 0; colonne < TAILLE; colonne++) printf("%2d", colonne);
+  puts("");
+
   for (int ligne = 0; ligne < TAILLE; ligne++) {
     printf("%c ", ligne + 'A');
-    for (int colonne1 = 0; colonne1 < TAILLE; colonne1++) {
-      afficherCase(tab1, ligne, colonne1, true);
+    for (int colonne = 0; colonne < TAILLE; colonne++) {
+      afficherCase(j1->grille, ligne, colonne, true);
     }
     printf("     ");
     printf("%c ", ligne + 'A');
-    for (int colonne2 = 0; colonne2 < TAILLE; colonne2++) {
-      afficherCase(tab2, ligne, colonne2, true);
+    for (int colonne = 0; colonne < TAILLE; colonne++) {
+      afficherCase(j2->grille, ligne, colonne, true);
     }
     puts("");
   }
-}
-
-// modifie 14/10
-
-/**
- * @brief Affiche les bateaux qui peuvent encore être placés.
- * @param bateau tableau indiquant les bateaux restant à placer
- */
-void afficherListeBateau(int bateau[QUANTITE]) {
-  puts("");
-
-  if (bateau[0]) puts("Patrouilleur (p) : Entrez 1 (2 cases)");
-  if (bateau[1]) puts("Croiseur     (c) : Entrez 2 (3 cases)");
-  if (bateau[2]) puts("Destroyer    (D) : Entrez 3 (3 cases)");
-  if (bateau[3]) puts("Cuirassé     (C) : Entrez 4 (4 cases)");
-  if (bateau[4]) puts("Porte-avions (P) : Entrez 5 (5 cases)");
-
   puts("");
 }
 
 /**
- * @brief Indique si une case du plateau est vide.
- * @param tab plateau de jeu
- * @param ligne indice de ligne
- * @param colonne indice de colonne
+ * @brief Efface l'écran en affichant des lignes vides
  */
-bool estVide(int tab[TAILLE][TAILLE], int ligne, int colonne) {
-  return tab[ligne][colonne] == 0;
+void cls() {
+    for(int i = 0; i<100; i++) {
+        printf("\n");
+    }
 }
 
 /**
- * @brief Vérifie si tous les bateaux ont été placés.
- * @param bateau tableau indiquant les bateaux restant à placer
+ * @brief Lit une position au clavier (exemple A0)
+ * @param ptrL adresse recevant l indice de ligne
+ * @param ptrC adresse recevant l indice de colonne
+ * @return true si la position est dans la grille
  */
-bool TerminerPlacement(int bateau[QUANTITE]) {
-  int somme = 0;
-  for (int i = 0; i < QUANTITE; i++) {
-    somme += bateau[i];
+bool LirePosition(int* ptrL, int* ptrC) {
+  char ligne = 'A' - 1;
+  int colonne = -1;
+  printf("Entrez position (ex: A0) : ");
+  scanf(" %c%d", &ligne, &colonne);
+  if (ligne >= 'a' && ligne <= 'z') {
+    ligne = ligne - 'a' + 'A';
   }
-  return (somme == 0) ? true : false;
-}
-
-/**
- * @brief Demande à l'utilisateur de répondre par oui ou non.
- */
-bool lireChoix() {
-  char choix;
-  printf("(Y/N) : ");
-  scanf(" %c", &choix);
-  while (choix != 'Y' && choix != 'y' && choix != 'N' && choix != 'n') {
-    printf("Confirme avec Y ou N : ");
-    scanf(" %c", &choix);
+  ligne -= 'A';
+  if (ligne < 0 || ligne >= TAILLE || colonne < 0 || colonne >= TAILLE) {
+    return false;
   }
-  return (choix == 'Y' || choix == 'y');
+  *ptrL = ligne;
+  *ptrC = colonne;
+  return true;
 }
 
 /**
- * @brief Ajoute un bateau dans une case si celle-ci est vide.
- * @param tab plateau de jeu
- * @param ligne indice de ligne
- * @param colonne indice de colonne
- * @param type type du bateau à placer
+ * @brief Lit le numero d un bateau
+ * @param ptrT adresse recevant le type choisi
+ * @return true si le numero est entre 1 et 5
  */
-void AjouterCase(int tab[TAILLE][TAILLE], int ligne, int colonne, int type) {
-  if (estVide(tab, ligne, colonne)) tab[ligne][colonne] = type;
+bool LireType(int* ptrT) {
+  int type = -1;
+  printf("Indiquez un numéro de bateau (1-5) : ");
+  scanf("%d", &type);
+  if (type < 1 || type > NB_TYPE) return false;
+  *ptrT = type;
+  return true;
 }
 
 /**
- * @brief Vide une case du plateau.
- * @param tab plateau de jeu
- * @param ligne indice de ligne
- * @param colonne indice de colonne
+ * @brief Lit la direction de placement
+ * @param ptrD adresse recevant la direction (1 haut 2 droite 3 bas 4 gauche)
+ * @return true si la direction est valide
  */
-void SupprimerCase(int tab[TAILLE][TAILLE], int ligne, int colonne) {
-  tab[ligne][colonne] = 0;
+bool lireDirection(int* ptrD) {
+  int direction = -1;
+  printf("Saisissez un nombre pour sélectionner l'orientation du placement : ");
+  scanf("%d", &direction);
+  if (direction < 1 || direction > 4) return false;
+  *ptrD = direction;
+  return true;
 }
 
 /**
- * @brief Vérifie si un bateau peut être placé dans une direction donnée.
- * @param tab plateau de jeu
- * @param ligne ligne de départ
- * @param colonne colonne de départ
+ * @brief Verifie qu un bateau peut etre placé dans une direction
+ * @param tab grille de jeu
+ * @param ligne ligne de depart
+ * @param colonne colonne de depart
  * @param type type du bateau
- * @param direction direction (1 haut, 2 droite, 3 bas, 4 gauche)
+ * @param direction direction du placement
+ * @return true si le bateau tient dans la grille sans croiser un autre
  */
 bool PlacementPossible(int tab[TAILLE][TAILLE], int ligne, int colonne,
                        int type, int direction) {
@@ -373,11 +308,12 @@ bool PlacementPossible(int tab[TAILLE][TAILLE], int ligne, int colonne,
 }
 
 /**
- * @brief Affiche les directions dans lesquelles un bateau peut être placé.
- * @param tab plateau de jeu
- * @param ligne ligne de départ
- * @param colonne colonne de départ
+ * @brief Affiche les directions possibles pour un bateau
+ * @param tab grille de jeu
+ * @param ligne ligne de depart
+ * @param colonne colonne de depart
  * @param type type du bateau
+ * @return true si au moins une direction est possible
  */
 bool PlacerListe(int tab[TAILLE][TAILLE], int ligne, int colonne, int type) {
   bool liste[4];
@@ -404,44 +340,132 @@ bool PlacerListe(int tab[TAILLE][TAILLE], int ligne, int colonne, int type) {
 }
 
 /**
- * @brief Place un bateau sur le plateau et le marque comme placé.
- * @param tab plateau de jeu
- * @param bateau tableau des bateaux disponibles
- * @param ligne ligne de départ
- * @param colonne colonne de départ
- * @param type type du bateau
+ * @brief Initialise les bateaux avec leur type et leur longueur
+ * @param bateaux tableau des bateaux
+ */
+void initialisationBateau(Bateau bateaux[NB_TYPE]){
+  for(TypeBateau typeBateau = 0; typeBateau < NB_TYPE; typeBateau++){
+    bateaux[typeBateau].type = typeBateau + 1;
+    bateaux[typeBateau].longueur = typeBateau + 1;
+    if (bateaux[typeBateau].type <= 2) bateaux[typeBateau].longueur++;
+    bateaux[typeBateau].estPlacee = false;
+    bateaux[typeBateau].estElimine = false;
+  }
+}
+
+/**
+ * @brief Affiche la liste des bateaux a placer ou deja placés
+ * @param bateau tableau des bateaux
+ * @param dejaPlace true pour lister les bateaux placés
+ */
+void afficherListeBateau(Bateau bateau[NB_TYPE], bool dejaPlace) {
+  puts("");
+    if (dejaPlace ? bateau[0].estPlacee : !bateau[0].estPlacee ) puts("Patrouilleur (p) : Entrez 1 (2 cases)");
+    if (dejaPlace ? bateau[1].estPlacee : !bateau[1].estPlacee ) puts("Croiseur     (c) : Entrez 2 (3 cases)");
+    if (dejaPlace ? bateau[2].estPlacee : !bateau[2].estPlacee ) puts("Destroyer    (D) : Entrez 3 (3 cases)");
+    if (dejaPlace ? bateau[3].estPlacee : !bateau[3].estPlacee ) puts("Cuirassé     (C) : Entrez 4 (4 cases)");
+    if (dejaPlace ? bateau[4].estPlacee : !bateau[4].estPlacee ) puts("Porte-avions (P) : Entrez 5 (5 cases)");
+  puts("");
+}
+
+/**
+ * @brief Verifie que tous les bateaux sont placés.
+ * @param bateau tableau des bateaux
+ * @return true si tous les bateaux sont placés
+ */
+bool TerminerPlacement(Bateau bateau[NB_TYPE]) {
+  for (int i = 0; i < NB_TYPE; i++) {
+    if (!bateau[i].estPlacee) return false;
+  }
+  return true;
+}
+
+/**
+ * @brief Verifie si tous les bateaux d une flotte sont coules
+ * @param bateau tableau des bateaux
+ * @return true si la flotte est detruite
+ */
+bool estPerdu(Bateau bateau[NB_TYPE]) {
+  for (int i = 0; i < NB_TYPE; i++) {
+    if (!bateau[i].estElimine) return false;
+  }
+  return true;
+}
+
+/**
+ * @brief Retire un bateau de la grille grace a sa position memorisée
+ * @param tab grille de jeu
+ * @param bateau tableau des bateaux
+ * @param type type du bateau a retirer (1 a 5)
+ */
+void SupprimerBateau(int tab[TAILLE][TAILLE], Bateau bateau[NB_TYPE], int type) {
+    if (!bateau[type - 1].estPlacee) return;
+    int direction = bateau[type - 1].direction;
+    int ligne = bateau[type - 1].ligne;
+    int colonne = bateau[type - 1].colonne;
+    switch (direction) {
+    case 1:
+      for (int i = 0; i < bateau[type - 1].longueur; i++) {
+        SupprimerCase(tab, ligne - i, colonne);
+      }
+      break;
+
+    case 2:
+      for (int i = 0; i < bateau[type - 1].longueur; i++) {
+        SupprimerCase(tab, ligne, colonne + i);
+      }
+      break;
+
+    case 3:
+      for (int i = 0; i < bateau[type - 1].longueur; i++) {
+        SupprimerCase(tab, ligne + i, colonne);
+      }
+      break;
+
+    case 4:
+      for (int i = 0; i < bateau[type - 1].longueur; i++) {
+        SupprimerCase(tab, ligne, colonne - i);
+      }
+      break;
+
+    default:
+      break;
+  }
+  bateau[type - 1].estPlacee = false;
+}
+
+/**
+ * @brief Place un bateau sur la grille et le marque comme place
+ * @param tab grille de jeu
+ * @param bateau tableau des bateaux
+ * @param ligne ligne de depart
+ * @param colonne colonne de depart
+ * @param type type du bateau (1 a 5)
  * @param direction direction du placement
  */
-void PlacerBateau(int tab[TAILLE][TAILLE], int bateau[QUANTITE], int ligne,
+void PlacerBateau(int tab[TAILLE][TAILLE], Bateau bateau[NB_TYPE], int ligne,
                   int colonne, int type, int direction) {
-  int longueur;
-  if (type <= 2)
-    longueur = type + 1;
-  else
-    longueur = type;
-
-  bateau[type - 1] = 0;
   switch (direction) {
     case 1:
-      for (int i = 0; i < longueur; i++) {
+      for (int i = 0; i < bateau[type - 1].longueur; i++) {
         AjouterCase(tab, ligne - i, colonne, type);
       }
       break;
 
     case 2:
-      for (int i = 0; i < longueur; i++) {
+      for (int i = 0; i < bateau[type - 1].longueur; i++) {
         AjouterCase(tab, ligne, colonne + i, type);
       }
       break;
 
     case 3:
-      for (int i = 0; i < longueur; i++) {
+      for (int i = 0; i < bateau[type - 1].longueur; i++) {
         AjouterCase(tab, ligne + i, colonne, type);
       }
       break;
 
     case 4:
-      for (int i = 0; i < longueur; i++) {
+      for (int i = 0; i < bateau[type - 1].longueur; i++) {
         AjouterCase(tab, ligne, colonne - i, type);
       }
       break;
@@ -449,104 +473,67 @@ void PlacerBateau(int tab[TAILLE][TAILLE], int bateau[QUANTITE], int ligne,
     default:
       break;
   }
+  bateau[type - 1].estPlacee = true;
 }
 
 /**
- * @brief Supprime du plateau toutes les cases d'un bateau donné.
- * @param tab plateau de jeu
- * @param bateau tableau des bateaux disponibles
- * @param type type du bateau à supprimer
+ * @brief Place automatiquement les cinq bateaux d un joueur pour les tests
+ * @param j joueur dont on place les bateaux
  */
-void SupprimerBateau(int tab[TAILLE][TAILLE], int bateau[QUANTITE], int type) {
-  bateau[type - 1] = type;
-  for (int i = 0; i < TAILLE; i++) {
-    for (int j = 0; j < TAILLE; j++) {
-      if (tab[i][j] == type) SupprimerCase(tab, i, j);
-    }
+void placerAuto(Joueur* j) {
+  for (int i = 0; i < NB_TYPE; i++) {
+    int type = i + 1;
+    int ligne = i * 2;      // lignes A, C, E, G, I
+    int colonne = 0;
+    int direction = 2;      // vers la droite
+    PlacerBateau(j->grille, j->bateaux, ligne, colonne, type, direction);
+    j->bateaux[i].ligne = ligne;
+    j->bateaux[i].colonne = colonne;
+    j->bateaux[i].direction = direction;
   }
 }
 
 /**
- * @brief Lit et valide une position sur le plateau.
- * @param ptrP tableau recevant l'indice de ligne puis celui de colonne
+ * @brief Guide le joueur pour ajouter un bateau sur sa grille
+ * @param tab grille du joueur
+ * @param bateau tableau des bateaux du joueur
  */
-bool LirePosition(int* ptrP) {
-  char ligne = 'A' - 1;
-  int colonne = -1;
-  printf("Entrez position (ex: A0) : ");
-  scanf(" %c%d", &ligne, &colonne);
-  if (ligne >= 'a' && ligne <= 'z') {
-    ligne = ligne - 'a' + 'A';
-  }
-  ligne -= 'A';
-  if (ligne < 0 || ligne >= TAILLE || colonne < 0 || colonne >= TAILLE) {
-    return false;
-  }
-  ptrP[0] = ligne;
-  ptrP[1] = colonne;
-  return true;
-}
-
-/**
- * @brief Lit et valide le type de bateau choisi.
- * @param ptrT adresse où stocker le type choisi
- */
-bool LireType(int* ptrT) {
-  int type = -1;
-  printf("Indiquez un numéro de bateau (1-5) : ");
-  scanf("%d", &type);
-  if (type < 1 || type > QUANTITE) return false;
-  *ptrT = type;
-  return true;
-}
-
-/**
- * @brief Lit et valide la direction de placement d'un bateau.
- * @param ptrD adresse où stocker la direction choisie
- */
-bool lireDirection(int* ptrD) {
-  int direction = -1;
-  printf("Saisissez un nombre pour sélectionner l'orientation du placement : ");
-  scanf("%d", &direction);
-  if (direction < 1 || direction > 4) return false;
-  *ptrD = direction;
-  return true;
-}
-
-/**
- * @brief Guide l'utilisateur pour ajouter un bateau au plateau.
- * @param tab plateau de jeu
- * @param bateau tableau des bateaux restant à placer
- */
-void AjouterBateau(int tab[TAILLE][TAILLE], int bateau[QUANTITE]) {
+void AjouterBateau(int tab[TAILLE][TAILLE], Bateau bateau[NB_TYPE]) {
   int type;
   int direction;
-  int position[2];
+  int ligne, colonne;
   int* ptrT = &type;
   int* ptrD = &direction;
-  int* ptrP = position;
+  int* ptrL = &ligne;
+  int* ptrC = &colonne;
   bool impossiblePlace;
   do {
     impossiblePlace = false;
-    afficherTable(tab);
-    if (!LirePosition(ptrP)) {
+    afficherTable(tab, false);
+    if (!LirePosition(ptrL, ptrC)) {
       puts("Position invalide.");
       impossiblePlace = true;
       continue;
     }
 
-    afficherListeBateau(bateau);
+    if (!estVide(tab, ligne, colonne)) {
+      puts("Cette case est deja occupee.");
+      impossiblePlace = true;
+      continue;
+    }
+
+    afficherListeBateau(bateau, false);
     if (!LireType(ptrT)) {
       puts("Type invalide.");
       impossiblePlace = true;
       continue;
     }
-    if (bateau[type - 1] == 0) {
+    if (bateau[type - 1].estPlacee) {
       puts("Ce bateau est déjà placé.");
       impossiblePlace = true;
       continue;
     }
-    if (!PlacerListe(tab, position[0], position[1], type))
+    if (!PlacerListe(tab, ligne, colonne, type))
       impossiblePlace = true;
     else {
       if (!lireDirection(ptrD)) {
@@ -554,36 +541,38 @@ void AjouterBateau(int tab[TAILLE][TAILLE], int bateau[QUANTITE]) {
         impossiblePlace = true;
         continue;
       }
-      if (!PlacementPossible(tab, position[0], position[1], type, direction)) {
+      if (!PlacementPossible(tab, ligne, colonne, type, direction)) {
         puts("Placement impossible dans cette direction.");
         impossiblePlace = true;
         continue;
       }
-      PlacerBateau(tab, bateau, position[0], position[1], type, direction);
+      PlacerBateau(tab, bateau, ligne, colonne, type, direction);
+      bateau[type - 1].ligne = ligne;
+      bateau[type - 1].colonne = colonne;
+      bateau[type - 1].direction = direction;
+      afficherTable(tab, false);
     }
   } while (impossiblePlace);
 }
 
-// modifié 14/10
-
 /**
- * @brief Permet d'ajouter ou de supprimer des bateaux avant de commencer.
- * @param tab plateau de jeu
- * @param bateau tableau des bateaux disponibles
+ * @brief Menu de placement : ajouter ou supprimer des bateaux puis terminer
+ * @param tab grille du joueur
+ * @param bateau tableau des bateaux du joueur
  */
-void ModifierBateau(int tab[TAILLE][TAILLE], int bateau[QUANTITE]) {
+void ModifierBateau(int tab[TAILLE][TAILLE], Bateau bateau[NB_TYPE]) {
   int mode;
   bool termine = false;
-
+  afficherTable(tab, false);
   while (!termine) {
-    cls();
-    afficherTable(tab);
-    printf("Ajouter (1), supprimer (2), terminer (3) (temporaire): ");
-    scanf("%d", &mode);
+    do{
+      printf("Ajouter (1), supprimer (2), terminer (3) (temporaire): ");
+      scanf("%d", &mode);
+    } while (mode < 1 || mode > 3);
+    
     switch (mode) {
       case 1:
-        cls();
-        if (TerminerPlacement(bateau)) {
+        if (TerminerPlacement(bateau)){
           printf("Tous les bateaux sont déjà placé !\n");
           break;
         }
@@ -591,12 +580,12 @@ void ModifierBateau(int tab[TAILLE][TAILLE], int bateau[QUANTITE]) {
         break;
       case 2: {
         int type;
-        afficherListeBateau(bateau);
+        afficherListeBateau(bateau, true);
         if (!LireType(&type)) {
           puts("Numéro invalide.");
           break;
         }
-        if (bateau[type - 1] != 0) {
+        if (!bateau[type - 1].estPlacee) {
           puts("Ce bateau n'est pas placé.");
           break;
         }
@@ -606,7 +595,9 @@ void ModifierBateau(int tab[TAILLE][TAILLE], int bateau[QUANTITE]) {
       case 3:
         if (TerminerPlacement(bateau)) {
           termine = true;
-          break;
+          for (int i = 0; i < 300; i++) {
+            puts("");
+          }
         } else
           puts("Tous les bateaux ne sont pas encore placés.");
         break;
@@ -618,205 +609,174 @@ void ModifierBateau(int tab[TAILLE][TAILLE], int bateau[QUANTITE]) {
 }
 
 /**
- * @brief Réinitialise les points de vie des cinq bateaux.
- * @param ptrB tableau des points de vie des bateaux
- */
-void rechargerVie(int* ptrB) {
-  for (int i = 0; i < QUANTITE; i++) {
-    ptrB[i] = i + 1;
-    if (i < 2) ptrB[i] += 1;
-  }
-}
-
-/**
- * @brief Indique si une position a déjà été visée.
- * @param tirs tableau des tirs effectués
+ * @brief Indique si une case de la cible a deja ete visée
+ * @param cible joueur qui subit les tirs
  * @param ligne indice de ligne
  * @param colonne indice de colonne
+ * @return true si la case contient une valeur negative
  */
-bool DejaTire(int tirs[TAILLE][TAILLE], int ligne, int colonne) {
-  return tirs[ligne][colonne];
+bool dejaTire(Joueur* cible, int ligne, int colonne) {
+  return cible->grille[ligne][colonne] < 0;
 }
 
 /**
- * @brief Enregistre un tir et met à jour les points de vie du bateau touché.
- * @param tab plateau contenant les bateaux
- * @param tirs tableau des tirs effectués
- * @param bateau tableau des points de vie des bateaux
- * @param ligne indice de ligne visée
- * @param colonne indice de colonne visée
+ * @brief Verifie si un bateau touche est coule et met a jour son etat
+ * @param cible joueur qui subit le tir
+ * @param typeBateau type du bateau touche (1 a 5)
  */
-void tire(int tab[TAILLE][TAILLE], int tirs[TAILLE][TAILLE],
-          int bateau[QUANTITE], int ligne, int colonne) {
-  if (tab[ligne][colonne]) {
-    tirs[ligne][colonne] = 1;
-    bateau[tab[ligne][colonne] - 1] -= 1;
-  } else
-    tirs[ligne][colonne] = 2;
-}
+void verifierCoulance(Joueur* cible, int typeBateau) {
+  Bateau* b = &cible->bateaux[typeBateau - 1];
+  int t = b->type;
+  int l = b->longueur;
+  int countHits = 0;
 
-/**
- * @brief Vérifie si tous les bateaux de la flotte sont détruits.
- * @param bateau tableau des points de vie des bateaux
- */
-bool estPertu(int bateau[QUANTITE]) {
-  int nombre = 0;
-  for (int i = 0; i < QUANTITE; i++) {
-    if (bateau[i]) nombre++;
+  for (int i = 0; i < TAILLE; i++) {
+    for (int j = 0; j < TAILLE; j++) {
+      if (cible->grille[i][j] == -t) {
+        countHits++;
+      }
+    }
   }
-  return nombre == 0;
+
+  if (countHits == l) {
+    b->estElimine = true;
+    printf("Bateau coule ! (Type %d)\n", t);
+  }
 }
 
 /**
- * @brief Gère les tours de tir des deux joueurs jusqu'à la fin de la partie.
- * @param tab1 plateau du premier joueur
- * @param tab2 plateau du second joueur
- * @param bateau1 points de vie des bateaux du premier joueur
- * @param bateau2 points de vie des bateaux du second joueur
- * @param tirs1 tirs effectués par le premier joueur
- * @param tirs2 tirs effectués par le second joueur
+ * @brief Fait tirer un joueur sur un autre
+ *
+ * Le coup est enregistre chez le tireur et la grille modifiee est celle de la cible
+ * @param tireur joueur qui tire
+ * @param cible joueur qui subit le tir
  */
-void seBattre(int tab1[TAILLE][TAILLE], int tab2[TAILLE][TAILLE],
-              int bateau1[QUANTITE], int bateau2[QUANTITE],
-              int tirs1[TAILLE][TAILLE], int tirs2[TAILLE][TAILLE]) {
-  int tour = 1;
-  int position[2];
-  bool partieFinie = false;
-  while (!partieFinie) {
-    afficherDeuxTable(tirs1, tirs2);
-    printf("\n--- Joueur %d, a vous de tirer ---\n", tour);
-    if (!LirePosition(position)) {
-      puts("Position invalide, reessayez.");
+void tire(Joueur* tireur, Joueur* cible) {
+  int ligne, colonne;
+  bool valide = false;
+
+  while (!valide) {
+    if (!LirePosition(&ligne, &colonne)) {
+      puts("Position hors grille ! Recommencez.");
       continue;
     }
-
-    if (tour == 1) {
-      if (DejaTire(tirs2, position[0], position[1])) {
-        puts("Vous avez deja tire ici !");
-        continue;
-      }
-      tire(tab2, tirs2, bateau2, position[0], position[1]);
-      if (estPertu(bateau2))
-        partieFinie = true;
-      else
-        tour = 2;
-    } else {
-      if (DejaTire(tirs1, position[0], position[1])) {
-        puts("Vous avez deja tire ici !");
-        continue;
-      }
-      tire(tab1, tirs1, bateau1, position[0], position[1]);
-      if (estPertu(bateau1))
-        partieFinie = true;
-      else
-        tour = 1;
+    if (dejaTire(cible, ligne, colonne)) {
+      puts("Vous avez déjà tiré sur cette case ! Recommencez.");
+      continue;
     }
+    valide = true;
   }
-  if (estPertu(bateau2))
-    puts("\nJoueur 1 a gagne !");
-  else
-    puts("\nJoueur 2 a gagne !");
-}
 
-/**
- * @brief Renvoie le nom correspondant à un type de bateau.
- * @param type type du bateau (1 à 5)
- * @return le nom du bateau
- */
-const char* nomBateau(int type) {
-  switch (type) {
-    case 1:
-      return "Patrouilleur";
-    case 2:
-      return "Croiseur";
-    case 3:
-      return "Destroyer";
-    case 4:
-      return "Cuirasse";
-    default:
-      return "Porte-avions";
-  }
-}
+  Coup c;
+  c.ligne = ligne;
+  c.colonne = colonne;
 
-/**
- * @brief Vérifie si une case a déjà été visée selon son état.
- * @param tab plateau du joueur
- * @param ligne indice de ligne
- * @param colonne indice de colonne
- * @return true si la condition est vérifiée, sinon false
- */
-bool dejaTire(int tab[TAILLE][TAILLE], int ligne, int colonne) {
-  return tab[ligne][colonne] == RATE || tab[ligne][colonne] > TOUCHE;
-}
-
-/**
- * @brief Compte les cases intactes d'un type de bateau.
- * @param tab plateau du joueur
- * @param type type du bateau
- * @return le nombre de cases intactes
- */
-int compteType(int tab[TAILLE][TAILLE], int type) {
-  int compte = 0;
-  for (int i = 0; i < TAILLE; i++) {
-    for (int j = 0; j < TAILLE; j++) {
-      if (tab[i][j] == type) compte++;
-    }
-  }
-  return compte;
-}
-
-/**
- * @brief Marque comme coulées les cases touchées du bateau indiqué.
- * @param tab plateau du joueur
- * @param type type du bateau
- */
-void coulerBateau(int tab[TAILLE][TAILLE], int type) {
-  for (int i = 0; i < TAILLE; i++) {
-    for (int j = 0; j < TAILLE; j++) {
-      if (tab[i][j] == type + TOUCHE) tab[i][j] = type + COULE;
-    }
-  }
-}
-
-/**
- * @brief Vérifie si la flotte ne contient plus de case de bateau intacte.
- * @param tab plateau du joueur
- * @return true si la condition est vérifiée, sinon false
- */
-bool flotteDetruite(int tab[TAILLE][TAILLE]) {
-  for (int i = 0; i < TAILLE; i++) {
-    for (int j = 0; j < TAILLE; j++) {
-      if (tab[i][j] >= 1 && tab[i][j] <= QUANTITE) return false;
-    }
-  }
-  return true;
-}
-
-/**
- * @brief Fait tirer l'ordinateur sur une case qui n'a pas encore été visée.
- * @param tab plateau du joueur
- */
-void tirOrdinateur(int tab[TAILLE][TAILLE]) {
-  int ligne;
-  int colonne;
-  do {
-    ligne = rand() % TAILLE;
-    colonne = rand() % TAILLE;
-  } while (dejaTire(tab, ligne, colonne));
-
-  printf("\nL'ordinateur tire en %c%d : ", ligne + 'A', colonne);
-
-  int type = tab[ligne][colonne];
-  if (type == 0) {
-    tab[ligne][colonne] = RATE;
-    puts("rate !");
+  if (cible->grille[ligne][colonne] > 0) {
+    int typeBateau = cible->grille[ligne][colonne];
+    cible->grille[ligne][colonne] = -typeBateau;
+    c.touche = true;
+    puts("Touche !");
+    verifierCoulance(cible, typeBateau);
   } else {
-    tab[ligne][colonne] = type + TOUCHE;
-    if (compteType(tab, type) == 0) {
-      coulerBateau(tab, type);
-      printf("COULE ! (%s)\n", nomBateau(type));
-    } else {
-      printf("touche (%s)\n", nomBateau(type));
+    cible->grille[ligne][colonne] = RATE; // RATE = -10 Valeur impossible (sentinelle) à avoir meme avec un bug de type
+    c.touche = false;
+    puts("Rate !");
+  }
+
+  tireur->coups[tireur->nbCoups] = c;
+  tireur->nbCoups++;
+}
+
+/**
+ * @brief Gere la phase de combat jusqu a la destruction d une flotte
+ * @param Joueur1 premier joueur
+ * @param Joueur2 second joueur
+ */
+void seBattre(Joueur* Joueur1, Joueur* Joueur2) {
+  puts("---- DEBUT DE LA PHASE DE COMBAT ----");
+  while (!estPerdu(Joueur1->bateaux) && !estPerdu(Joueur2->bateaux)) {
+    printf("%s, à vous de tirer.\n", Joueur1->nom);
+    afficherDeuxTables(Joueur1, Joueur2);
+    tire(Joueur1, Joueur2);
+
+    // Anti-Tir si Joueur 1 a detruit Joueur 2
+    if(!estPerdu(Joueur2->bateaux)) {
+        printf("%s, à vous de tirer.\n", Joueur2->nom);
+        afficherDeuxTables(Joueur1, Joueur2);
+        tire(Joueur2, Joueur1);
+    }
+
+
+    cls();
+
+
+    //afficherTable(p->grille, true);
+    //tire(p);
+  }
+
+  if (estPerdu(Joueur1->bateaux)) {
+    printf("%s a gagné !\n", Joueur2->nom);
+  }
+  if (estPerdu(Joueur2->bateaux)) {
+    printf("%s a gagné !\n", Joueur1->nom);
+  }
+  //afficherTable(p->grille, true);
+
+}
+//
+/**
+ * @brief Initialise la grille les bateaux et le compteur de coups d un joueur
+ * @param j joueur a initialiser
+ */
+void initialiserJoueur(Joueur* j) {
+  for (int l = 0; l < TAILLE; l++) {
+    for (int c = 0; c < TAILLE; c++) {
+      j->grille[l][c] = 0;
     }
   }
+  initialisationBateau(j->bateaux);
+  j->nbCoups = 0;
+}
+
+void lireNom(Joueur* j, int numero) {
+  char c;
+  printf("Nom du joueur %d : ", numero);
+  scanf("%15s", j->nom);
+  do {
+    scanf("%c", &c);
+  } while (c != '\n');
+}
+
+/**
+ * @brief Point d entree : prepare les deux joueurs puis lance le combat
+ * @return 0 si tout s est bien passe
+ */
+int main() {
+    Joueur j1;
+    Joueur j2;
+
+
+
+  initialiserJoueur(&j1);
+  initialiserJoueur(&j2);
+  lireNom(&j1, 1);
+  lireNom(&j2, 2);
+
+  puts("Bienvenue dans la Bataille Navale !");
+  puts("Le jeu n'est disponible quand JcJ pour le moment Joueur 2 détourner le regard ");
+
+
+
+if (AUTO_PLACEMENT) {
+  placerAuto(&j1);
+  placerAuto(&j2);
+} else {
+  printf("%s, placez vos bateaux.\n", j1.nom);
+  ModifierBateau(j1.grille, j1.bateaux);
+  printf("%s, placez vos bateaux.\n", j2.nom);
+  ModifierBateau(j2.grille, j2.bateaux);
+}
+  seBattre(&j1, &j2);
+
+  return 0;
 }
