@@ -13,14 +13,23 @@
 /** @brief Taille de la grille carrée */
 #define TAILLE 10
 
-/** @brief Valeur écrite dans la grille pour un tir raté en dehors de l intervalle -1 a -5. */
+/** @brief Valeur écrite dans la grille pour un tir raté en dehors de l
+ * intervalle -1 a -5. */
 #define RATE (-10)
 
 /** @brief Placement automatique de test (true) ou manuel (false) */
-#define AUTO_PLACEMENT false // Permet d'automatiquement placer des bateaux | Laissez false en prod
+#define AUTO_PLACEMENT \
+  false  // Permet d'automatiquement placer des bateaux | Laissez false en prod
 
 /** @brief Types de bateaux NB_TYPE donne le nombre de types (n-1) */
-typedef enum { PATROUILLEUR, CROISEUR, DESTROYER, CUIRASSE, PORTEAVIONS, NB_TYPE } TypeBateau;
+typedef enum {
+  PATROUILLEUR,
+  CROISEUR,
+  DESTROYER,
+  CUIRASSE,
+  PORTEAVIONS,
+  NB_TYPE
+} TypeBateau;
 
 /**
  * @struct Bateau
@@ -48,15 +57,15 @@ typedef struct {
  * @struct Joueur
  * @brief Un joueur avec sa grille ses bateaux et l historique de ses tirs
  *
- * La grille contient les bateaux du joueur et les tirs recus (valeurs negatives)
- * Les coups sont les tirs que le joueur a faits sur son adversaire
+ * La grille contient les bateaux du joueur et les tirs recus (valeurs
+ * negatives) Les coups sont les tirs que le joueur a faits sur son adversaire
  */
 typedef struct {
-    char nom[16]; // Nom du Joueur
-    int grille[TAILLE][TAILLE]; // Grille du Joueur
-    Bateau bateaux[NB_TYPE]; // Bateaux restants du joueur
-    Coup coups[TAILLE * TAILLE]; // Les coups qu'il a joué
-    int nbCoups;
+  char nom[16];                 // Nom du Joueur
+  int grille[TAILLE][TAILLE];   // Grille du Joueur
+  Bateau bateaux[NB_TYPE];      // Bateaux restants du joueur
+  Coup coups[TAILLE * TAILLE];  // Les coups qu'il a joué
+  int nbCoups;
 } Joueur;
 
 /**
@@ -150,9 +159,8 @@ void afficherCase(int tab[TAILLE][TAILLE], int ligne, int colonne,
  */
 void afficherTable(int tab[TAILLE][TAILLE], bool auCombat) {
   puts("");
-      printf(" ");
+  printf(" ");
   for (int colonne = 0; colonne < TAILLE; colonne++) {
-
     printf("%2d", colonne);
   }
   puts("");
@@ -204,9 +212,9 @@ void afficherDeuxTables(Joueur* j1, Joueur* j2) {
  * @brief Efface l'écran en affichant des lignes vides
  */
 void cls() {
-    for(int i = 0; i<100; i++) {
-        printf("\n");
-    }
+  for (int i = 0; i < 100; i++) {
+    printf("\n");
+  }
 }
 
 /**
@@ -343,8 +351,8 @@ bool PlacerListe(int tab[TAILLE][TAILLE], int ligne, int colonne, int type) {
  * @brief Initialise les bateaux avec leur type et leur longueur
  * @param bateaux tableau des bateaux
  */
-void initialisationBateau(Bateau bateaux[NB_TYPE]){
-  for(TypeBateau typeBateau = 0; typeBateau < NB_TYPE; typeBateau++){
+void initialisationBateau(Bateau bateaux[NB_TYPE]) {
+  for (TypeBateau typeBateau = 0; typeBateau < NB_TYPE; typeBateau++) {
     bateaux[typeBateau].type = typeBateau + 1;
     bateaux[typeBateau].longueur = typeBateau + 1;
     if (bateaux[typeBateau].type <= 2) bateaux[typeBateau].longueur++;
@@ -360,11 +368,16 @@ void initialisationBateau(Bateau bateaux[NB_TYPE]){
  */
 void afficherListeBateau(Bateau bateau[NB_TYPE], bool dejaPlace) {
   puts("");
-    if (dejaPlace ? bateau[0].estPlacee : !bateau[0].estPlacee ) puts("Patrouilleur (p) : Entrez 1 (2 cases)");
-    if (dejaPlace ? bateau[1].estPlacee : !bateau[1].estPlacee ) puts("Croiseur     (c) : Entrez 2 (3 cases)");
-    if (dejaPlace ? bateau[2].estPlacee : !bateau[2].estPlacee ) puts("Destroyer    (D) : Entrez 3 (3 cases)");
-    if (dejaPlace ? bateau[3].estPlacee : !bateau[3].estPlacee ) puts("Cuirassé     (C) : Entrez 4 (4 cases)");
-    if (dejaPlace ? bateau[4].estPlacee : !bateau[4].estPlacee ) puts("Porte-avions (P) : Entrez 5 (5 cases)");
+  if (dejaPlace ? bateau[0].estPlacee : !bateau[0].estPlacee)
+    puts("Patrouilleur (p) : Entrez 1 (2 cases)");
+  if (dejaPlace ? bateau[1].estPlacee : !bateau[1].estPlacee)
+    puts("Croiseur     (c) : Entrez 2 (3 cases)");
+  if (dejaPlace ? bateau[2].estPlacee : !bateau[2].estPlacee)
+    puts("Destroyer    (D) : Entrez 3 (3 cases)");
+  if (dejaPlace ? bateau[3].estPlacee : !bateau[3].estPlacee)
+    puts("Cuirassé     (C) : Entrez 4 (4 cases)");
+  if (dejaPlace ? bateau[4].estPlacee : !bateau[4].estPlacee)
+    puts("Porte-avions (P) : Entrez 5 (5 cases)");
   puts("");
 }
 
@@ -398,12 +411,13 @@ bool estPerdu(Bateau bateau[NB_TYPE]) {
  * @param bateau tableau des bateaux
  * @param type type du bateau a retirer (1 a 5)
  */
-void SupprimerBateau(int tab[TAILLE][TAILLE], Bateau bateau[NB_TYPE], int type) {
-    if (!bateau[type - 1].estPlacee) return;
-    int direction = bateau[type - 1].direction;
-    int ligne = bateau[type - 1].ligne;
-    int colonne = bateau[type - 1].colonne;
-    switch (direction) {
+void SupprimerBateau(int tab[TAILLE][TAILLE], Bateau bateau[NB_TYPE],
+                     int type) {
+  if (!bateau[type - 1].estPlacee) return;
+  int direction = bateau[type - 1].direction;
+  int ligne = bateau[type - 1].ligne;
+  int colonne = bateau[type - 1].colonne;
+  switch (direction) {
     case 1:
       for (int i = 0; i < bateau[type - 1].longueur; i++) {
         SupprimerCase(tab, ligne - i, colonne);
@@ -483,9 +497,9 @@ void PlacerBateau(int tab[TAILLE][TAILLE], Bateau bateau[NB_TYPE], int ligne,
 void placerAuto(Joueur* j) {
   for (int i = 0; i < NB_TYPE; i++) {
     int type = i + 1;
-    int ligne = i * 2;      // lignes A, C, E, G, I
+    int ligne = i * 2;  // lignes A, C, E, G, I
     int colonne = 0;
-    int direction = 2;      // vers la droite
+    int direction = 2;  // vers la droite
     PlacerBateau(j->grille, j->bateaux, ligne, colonne, type, direction);
     j->bateaux[i].ligne = ligne;
     j->bateaux[i].colonne = colonne;
@@ -565,14 +579,14 @@ void ModifierBateau(int tab[TAILLE][TAILLE], Bateau bateau[NB_TYPE]) {
   bool termine = false;
   afficherTable(tab, false);
   while (!termine) {
-    do{
+    do {
       printf("Ajouter (1), supprimer (2), terminer (3) (temporaire): ");
       scanf("%d", &mode);
     } while (mode < 1 || mode > 3);
-    
+
     switch (mode) {
       case 1:
-        if (TerminerPlacement(bateau)){
+        if (TerminerPlacement(bateau)) {
           printf("Tous les bateaux sont déjà placé !\n");
           break;
         }
@@ -647,7 +661,8 @@ void verifierCoulance(Joueur* cible, int typeBateau) {
 /**
  * @brief Fait tirer un joueur sur un autre
  *
- * Le coup est enregistre chez le tireur et la grille modifiee est celle de la cible
+ * Le coup est enregistre chez le tireur et la grille modifiee est celle de la
+ * cible
  * @param tireur joueur qui tire
  * @param cible joueur qui subit le tir
  */
@@ -678,7 +693,9 @@ void tire(Joueur* tireur, Joueur* cible) {
     puts("Touche !");
     verifierCoulance(cible, typeBateau);
   } else {
-    cible->grille[ligne][colonne] = RATE; // RATE = -10 Valeur impossible (sentinelle) à avoir meme avec un bug de type
+    cible->grille[ligne][colonne] =
+        RATE;  // RATE = -10 Valeur impossible (sentinelle) à avoir meme avec un
+               // bug de type
     c.touche = false;
     puts("Rate !");
   }
@@ -700,18 +717,16 @@ void seBattre(Joueur* Joueur1, Joueur* Joueur2) {
     tire(Joueur1, Joueur2);
 
     // Anti-Tir si Joueur 1 a detruit Joueur 2
-    if(!estPerdu(Joueur2->bateaux)) {
-        printf("%s, à vous de tirer.\n", Joueur2->nom);
-        afficherDeuxTables(Joueur1, Joueur2);
-        tire(Joueur2, Joueur1);
+    if (!estPerdu(Joueur2->bateaux)) {
+      printf("%s, à vous de tirer.\n", Joueur2->nom);
+      afficherDeuxTables(Joueur1, Joueur2);
+      tire(Joueur2, Joueur1);
     }
-
 
     cls();
 
-
-    //afficherTable(p->grille, true);
-    //tire(p);
+    // afficherTable(p->grille, true);
+    // tire(p);
   }
 
   if (estPerdu(Joueur1->bateaux)) {
@@ -720,8 +735,7 @@ void seBattre(Joueur* Joueur1, Joueur* Joueur2) {
   if (estPerdu(Joueur2->bateaux)) {
     printf("%s a gagné !\n", Joueur1->nom);
   }
-  //afficherTable(p->grille, true);
-
+  // afficherTable(p->grille, true);
 }
 //
 /**
@@ -747,15 +761,22 @@ void lireNom(Joueur* j, int numero) {
   } while (c != '\n');
 }
 
+/* Iesin : A faire later
+void JcJ(){
+  Joueur j1;
+  Joueur j2;
+
+  initialiserJoueur(&j1);
+
+}*/
+
 /**
  * @brief Point d entree : prepare les deux joueurs puis lance le combat
  * @return 0 si tout s est bien passe
  */
 int main() {
-    Joueur j1;
-    Joueur j2;
-
-
+  Joueur j1;
+  Joueur j2;
 
   initialiserJoueur(&j1);
   initialiserJoueur(&j2);
@@ -763,19 +784,19 @@ int main() {
   lireNom(&j2, 2);
 
   puts("Bienvenue dans la Bataille Navale !");
-  puts("Le jeu n'est disponible quand JcJ pour le moment Joueur 2 détourner le regard ");
+  puts(
+      "Le jeu n'est disponible quand JcJ pour le moment Joueur 2 détourner le "
+      "regard ");
 
-
-
-if (AUTO_PLACEMENT) {
-  placerAuto(&j1);
-  placerAuto(&j2);
-} else {
-  printf("%s, placez vos bateaux.\n", j1.nom);
-  ModifierBateau(j1.grille, j1.bateaux);
-  printf("%s, placez vos bateaux.\n", j2.nom);
-  ModifierBateau(j2.grille, j2.bateaux);
-}
+  if (AUTO_PLACEMENT) {
+    placerAuto(&j1);
+    placerAuto(&j2);
+  } else {
+    printf("%s, placez vos bateaux.\n", j1.nom);
+    ModifierBateau(j1.grille, j1.bateaux);
+    printf("%s, placez vos bateaux.\n", j2.nom);
+    ModifierBateau(j2.grille, j2.bateaux);
+  }
   seBattre(&j1, &j2);
 
   return 0;
